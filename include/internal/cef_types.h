@@ -3234,6 +3234,36 @@ typedef enum {
   CEF_SHOW_STATE_FULLSCREEN,
 } cef_show_state_t;
 
+///
+// Media access permissions used by OnRequestMediaAccessPermission.
+///
+typedef enum {
+  ///
+  // No permission.
+  ///
+  CEF_MEDIA_PERMISSION_NONE = 0,
+
+  ///
+  // Device audio capture permission.
+  ///
+  CEF_MEDIA_PERMISSION_DEVICE_AUDIO_CAPTURE = 1 << 0,
+
+  ///
+  // Device video capture permission.
+  ///
+  CEF_MEDIA_PERMISSION_DEVICE_VIDEO_CAPTURE = 1 << 1,
+
+  ///
+  // Desktop audio capture permission.
+  ///
+  CEF_MEDIA_PERMISSION_DESKTOP_AUDIO_CAPTURE = 1 << 2,
+
+  ///
+  // Desktop video capture permission.
+  ///
+  CEF_MEDIA_PERMISSION_DESKTOP_VIDEO_CAPTURE = 1 << 3,
+} cef_media_access_permission_types_t;
+
 #ifdef __cplusplus
 }
 #endif
