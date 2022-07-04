@@ -33,79 +33,47 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=026a7f827962222a1df8b62a8e7bdfbf4dce27e0$
+// $hash=212f13ac6baeeefb86f1648d1e18ccba95fd5f79$
 //
 
-#ifndef CEF_INCLUDE_CAPI_CEF_PROCESS_MESSAGE_CAPI_H_
-#define CEF_INCLUDE_CAPI_CEF_PROCESS_MESSAGE_CAPI_H_
+#ifndef CEF_INCLUDE_CAPI_CEF_SHARED_MEMORY_REGION_CAPI_H_
+#define CEF_INCLUDE_CAPI_CEF_SHARED_MEMORY_REGION_CAPI_H_
 #pragma once
 
 #include "include/capi/cef_base_capi.h"
-#include "include/capi/cef_shared_memory_region_capi.h"
-#include "include/capi/cef_values_capi.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 ///
-// Structure representing a message. Can be used on any process and thread.
+// Structure that wraps platform-dependent share memory region mapping.
 ///
-typedef struct _cef_process_message_t {
+typedef struct _cef_shared_memory_region_t {
   ///
   // Base structure.
   ///
   cef_base_ref_counted_t base;
 
   ///
-  // Returns true (1) if this object is valid. Do not call any other functions
-  // if this function returns false (0).
+  // Returns true (1) if the mapping is valid.
   ///
-  int(CEF_CALLBACK* is_valid)(struct _cef_process_message_t* self);
+  int(CEF_CALLBACK* is_valid)(struct _cef_shared_memory_region_t* self);
 
   ///
-  // Returns true (1) if the values of this object are read-only. Some APIs may
-  // expose read-only objects.
+  // Returns the size of the mapping in bytes. Returns 0 for invalid instances.
   ///
-  int(CEF_CALLBACK* is_read_only)(struct _cef_process_message_t* self);
+  size_t(CEF_CALLBACK* size)(struct _cef_shared_memory_region_t* self);
 
   ///
-  // Returns a writable copy of this object. Returns nullptr when message
-  // contains a shared memory region.
+  // Returns the pointer to the memory. Returns nullptr for invalid instances.
+  // The returned pointer is only valid for the life span of this object.
   ///
-  struct _cef_process_message_t*(CEF_CALLBACK* copy)(
-      struct _cef_process_message_t* self);
-
-  ///
-  // Returns the message name.
-  ///
-  // The resulting string must be freed by calling cef_string_userfree_free().
-  cef_string_userfree_t(CEF_CALLBACK* get_name)(
-      struct _cef_process_message_t* self);
-
-  ///
-  // Returns the list of arguments. Returns nullptr when message contains a
-  // shared memory region.
-  ///
-  struct _cef_list_value_t*(CEF_CALLBACK* get_argument_list)(
-      struct _cef_process_message_t* self);
-
-  ///
-  // Returns the shared memory region. Returns nullptr when message contains an
-  // argument list.
-  ///
-  struct _cef_shared_memory_region_t*(CEF_CALLBACK* get_shared_memory_region)(
-      struct _cef_process_message_t* self);
-} cef_process_message_t;
-
-///
-// Create a new cef_process_message_t object with the specified name.
-///
-CEF_EXPORT cef_process_message_t* cef_process_message_create(
-    const cef_string_t* name);
+  const void*(CEF_CALLBACK* memory)(struct _cef_shared_memory_region_t* self);
+} cef_shared_memory_region_t;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // CEF_INCLUDE_CAPI_CEF_PROCESS_MESSAGE_CAPI_H_
+#endif  // CEF_INCLUDE_CAPI_CEF_SHARED_MEMORY_REGION_CAPI_H_
