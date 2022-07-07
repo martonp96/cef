@@ -28,6 +28,7 @@
 #include "ui/base/win/shell.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "ui/events/event_utils.h"
 #include "ui/events/keycodes/dom/dom_key.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
@@ -447,7 +448,9 @@ ui::KeyEvent CefBrowserPlatformDelegateNativeWin::TranslateUiKeyEvent(
   ui::KeyboardCode key_code =
       ui::KeyboardCodeForWindowsKeyCode(key_event.windows_key_code);
   ui::DomCode dom_code =
-      ui::KeycodeConverter::NativeKeycodeToDomCode(key_event.native_key_code);
+      ui::KeycodeConverter::NativeKeycodeToDomCode(
+          ui::GetScanCodeFromLParam(key_event.native_key_code)
+      );
   base::TimeTicks time_stamp = GetEventTimeStamp();
 
   if (key_event.type == KEYEVENT_CHAR) {
@@ -466,6 +469,15 @@ ui::KeyEvent CefBrowserPlatformDelegateNativeWin::TranslateUiKeyEvent(
       break;
     default:
       NOTREACHED();
+  }
+
+  // Chrome set's repeat flag only for keydown event.
+  if (type == ui::ET_KEY_PRESSED) {
+    // Bit 30 of lParam represents the "previous key state". If set, the key
+    // was already down, therefore this is an auto-repeat.
+    if ((key_event.native_key_code & 0x40000000) != 0) {
+      flags |= ui::EF_IS_REPEAT;
+    }
   }
 
   ui::DomKey dom_key =

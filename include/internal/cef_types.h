@@ -2045,11 +2045,15 @@ typedef struct _cef_key_event_t {
   // specification. Sometimes it comes directly from the event (i.e. on
   // Windows) and sometimes it's determined using a mapping function. See
   // WebCore/platform/chromium/KeyboardCodes.h for the list of values.
+  //
+  // On windows this value same as wParam in keyboard messages.
   ///
   int windows_key_code;
 
   ///
   // The actual key code genenerated by the platform.
+  //
+  // On windows this value same as lParam in keyboard messages.
   ///
   int native_key_code;
 

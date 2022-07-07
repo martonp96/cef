@@ -71,7 +71,7 @@ int GetCefMouseModifiers(WPARAM wparam) {
   return modifiers;
 }
 
-int GetCefKeyboardModifiers(WPARAM wparam, LPARAM lparam) {
+int GetCefKeyboardModifiers() {
   int modifiers = 0;
   if (IsKeyDown(VK_SHIFT))
     modifiers |= EVENTFLAG_SHIFT_DOWN;
@@ -85,6 +85,12 @@ int GetCefKeyboardModifiers(WPARAM wparam, LPARAM lparam) {
     modifiers |= EVENTFLAG_NUM_LOCK_ON;
   if (::GetKeyState(VK_CAPITAL) & 1)
     modifiers |= EVENTFLAG_CAPS_LOCK_ON;
+
+  return modifiers;
+}
+
+int GetCefKeyboardModifiersFromKeyEvent(WPARAM wparam, LPARAM lparam) {
+  int modifiers = 0;
 
   switch (wparam) {
     case VK_RETURN:
