@@ -897,7 +897,7 @@ if platform == 'windows':
 
   # Generate the cef_sandbox.lib merged library. A separate *_sandbox build
   # should exist when GN is_official_build=true.
-  if mode in ('standard', 'minimal', 'sandbox'):
+  if mode in ('sandbox'): #'standard', 'minimal', 'sandbox'):
     dirs = {
         'Debug': (build_dir_debug + '_sandbox', build_dir_debug),
         'Release': (build_dir_release + '_sandbox', build_dir_release)
