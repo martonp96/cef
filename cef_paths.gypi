@@ -8,7 +8,7 @@
 # by hand. See the translator.README.txt file in the tools directory for
 # more information.
 #
-# $hash=5f2e9bf79ec768c0eb978ff5e1dd0178701dcc21$
+# $hash=34417668e2115b655ed01c9e85e2ac333f65bb51$
 #
 
 {

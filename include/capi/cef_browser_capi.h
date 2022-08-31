@@ -33,7 +33,7 @@
 // by hand. See the translator.README.txt file in the tools directory for
 // more information.
 //
-// $hash=b1c1e44e6d3842064ef6e5b9823173f7ec1fcccc$
+// $hash=79760529445fb52ed55db72fbe6698a390d126d3$
 //
 
 #ifndef CEF_INCLUDE_CAPI_CEF_BROWSER_CAPI_H_
@@ -666,6 +666,17 @@ typedef struct _cef_browser_host_t {
       const struct _cef_mouse_event_t* event,
       int deltaX,
       int deltaY);
+
+  ///
+  // Send a mouse wheel event to the browser. The |x| and |y| coordinates are
+  // relative to the upper-left corner of the view. The |deltaX| and |deltaY|
+  // values represent the movement delta in the X and Y directions respectively.
+  // In order to scroll inside select popups with window rendering disabled
+  // cef_render_handler_t::GetScreenPoint should be implemented properly.
+  ///
+  void(CEF_CALLBACK* send_mouse_wheel_event_native)(
+      struct _cef_browser_host_t* self,
+      const void* msg);
 
   ///
   // Send a touch event to the browser for a windowless browser.

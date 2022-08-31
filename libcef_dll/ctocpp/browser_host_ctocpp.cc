@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=fa3208182bcdb9aab36096b3ce5ecdd35cb0a80f$
+// $hash=4f67ae2be0b8e15080dfb8dcf41e7ac1d8160dac$
 //
 
 #include "libcef_dll/ctocpp/browser_host_ctocpp.h"
@@ -743,6 +743,25 @@ void CefBrowserHostCToCpp::SendMouseWheelEvent(const CefMouseEvent& event,
 }
 
 NO_SANITIZE("cfi-icall")
+void CefBrowserHostCToCpp::SendMouseWheelEventNative(const void* msg) {
+  shutdown_checker::AssertNotShutdown();
+
+  cef_browser_host_t* _struct = GetStruct();
+  if (CEF_MEMBER_MISSING(_struct, send_mouse_wheel_event_native))
+    return;
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  // Verify param: msg; type: simple_byaddr
+  DCHECK(msg);
+  if (!msg)
+    return;
+
+  // Execute
+  _struct->send_mouse_wheel_event_native(_struct, msg);
+}
+
+NO_SANITIZE("cfi-icall")
 void CefBrowserHostCToCpp::SendTouchEvent(const CefTouchEvent& event) {
   shutdown_checker::AssertNotShutdown();
 
@@ -993,8 +1012,8 @@ void CefBrowserHostCToCpp::DragSourceSystemDragEnded() {
 }
 
 NO_SANITIZE("cfi-icall")
-CefRefPtr<CefNavigationEntry>
-CefBrowserHostCToCpp::GetVisibleNavigationEntry() {
+CefRefPtr<
+    CefNavigationEntry> CefBrowserHostCToCpp::GetVisibleNavigationEntry() {
   shutdown_checker::AssertNotShutdown();
 
   cef_browser_host_t* _struct = GetStruct();

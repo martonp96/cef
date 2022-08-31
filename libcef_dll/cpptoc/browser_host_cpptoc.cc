@@ -9,7 +9,7 @@
 // implementations. See the translator.README.txt file in the tools directory
 // for more information.
 //
-// $hash=65c260e354b6dc85bf121b60081eff450b043542$
+// $hash=ab2aab6229837209fd8ff57b04ab5cd3f03c85c2$
 //
 
 #include "libcef_dll/cpptoc/browser_host_cpptoc.h"
@@ -882,6 +882,25 @@ browser_host_send_mouse_wheel_event(struct _cef_browser_host_t* self,
 }
 
 void CEF_CALLBACK
+browser_host_send_mouse_wheel_event_native(struct _cef_browser_host_t* self,
+                                           const void* msg) {
+  shutdown_checker::AssertNotShutdown();
+
+  // AUTO-GENERATED CONTENT - DELETE THIS COMMENT BEFORE MODIFYING
+
+  DCHECK(self);
+  if (!self)
+    return;
+  // Verify param: msg; type: simple_byaddr
+  DCHECK(msg);
+  if (!msg)
+    return;
+
+  // Execute
+  CefBrowserHostCppToC::Get(self)->SendMouseWheelEventNative(msg);
+}
+
+void CEF_CALLBACK
 browser_host_send_touch_event(struct _cef_browser_host_t* self,
                               const struct _cef_touch_event_t* event) {
   shutdown_checker::AssertNotShutdown();
@@ -1382,6 +1401,8 @@ CefBrowserHostCppToC::CefBrowserHostCppToC() {
   GetStruct()->send_mouse_click_event = browser_host_send_mouse_click_event;
   GetStruct()->send_mouse_move_event = browser_host_send_mouse_move_event;
   GetStruct()->send_mouse_wheel_event = browser_host_send_mouse_wheel_event;
+  GetStruct()->send_mouse_wheel_event_native =
+      browser_host_send_mouse_wheel_event_native;
   GetStruct()->send_touch_event = browser_host_send_touch_event;
   GetStruct()->send_capture_lost_event = browser_host_send_capture_lost_event;
   GetStruct()->notify_move_or_resize_started =
