@@ -68,35 +68,30 @@ class CefMediaAccessQuery {
     CEF_REQUIRE_UIT();
 
     blink::mojom::MediaStreamRequestResult result;
-    blink::mojom::StreamDevicesSetPtr stream_devices_set;
+    blink::mojom::StreamDevicesPtr stream_devices;
 
     if (allowed_permissions == CEF_MEDIA_PERMISSION_NONE) {
       result = blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED;
-      stream_devices_set = blink::mojom::StreamDevicesSet::New();
+      stream_devices = blink::mojom::StreamDevices::New();
     } else {
       bool error = false;
       if (allowed_permissions == requested_permissions()) {
-        stream_devices_set = GetRequestedMediaDevices();
+        stream_devices = GetRequestedMediaDevices();
       } else {
-        stream_devices_set = GetAllowedMediaDevices(allowed_permissions, error);
+        stream_devices = GetAllowedMediaDevices(allowed_permissions, error);
       }
       result = error ? blink::mojom::MediaStreamRequestResult::INVALID_STATE
                      : blink::mojom::MediaStreamRequestResult::OK;
     }
 
-    bool has_video = false;
-    bool has_audio = false;
-    if (!stream_devices_set->stream_devices.empty()) {
-      blink::mojom::StreamDevices& devices =
-          *stream_devices_set->stream_devices[0];
-      has_video = devices.video_device.has_value();
-      has_audio = devices.audio_device.has_value();
-    }
+    bool has_video = stream_devices->video_device.has_value();
+    bool has_audio = stream_devices->audio_device.has_value();
+
     auto media_stream_ui =
         browser_->GetMediaStreamRegistrar()->MaybeCreateMediaStreamUI(
             has_video, has_audio);
 
-    std::move(callback_).Run(*stream_devices_set, result,
+    std::move(callback_).Run(*stream_devices, result,
                              std::move(media_stream_ui));
   }
 
@@ -125,7 +120,7 @@ class CefMediaAccessQuery {
             blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE);
   }
 
-  blink::mojom::StreamDevicesSetPtr GetRequestedMediaDevices() const {
+  blink::mojom::StreamDevicesPtr GetRequestedMediaDevices() const {
     CEF_REQUIRE_UIT();
 
     blink::MediaStreamDevices audio_devices;
@@ -164,12 +159,10 @@ class CefMediaAccessQuery {
           request_.video_type, media_id.ToString(), "Screen"));
     }
 
-    blink::mojom::StreamDevicesSetPtr stream_devices_set =
-        blink::mojom::StreamDevicesSet::New();
-    stream_devices_set->stream_devices.emplace_back(
-        blink::mojom::StreamDevices::New());
+    blink::mojom::StreamDevicesPtr stream_devices =
+        blink::mojom::StreamDevices::New();
     blink::mojom::StreamDevices& devices =
-        *stream_devices_set->stream_devices[0];
+        *stream_devices;
 
     // At most one audio device and one video device can be used in a stream.
     if (!audio_devices.empty())
@@ -177,10 +170,10 @@ class CefMediaAccessQuery {
     if (!video_devices.empty())
       devices.video_device = video_devices.front();
 
-    return stream_devices_set;
+    return stream_devices;
   }
 
-  blink::mojom::StreamDevicesSetPtr GetAllowedMediaDevices(
+  blink::mojom::StreamDevicesPtr GetAllowedMediaDevices(
       uint32_t allowed_permissions,
       bool& error) {
     error = false;
@@ -196,7 +189,7 @@ class CefMediaAccessQuery {
     const bool desktop_video_allowed =
         allowed_permissions & CEF_MEDIA_PERMISSION_DESKTOP_VIDEO_CAPTURE;
 
-    blink::mojom::StreamDevicesSetPtr stream_devices_set;
+    blink::mojom::StreamDevicesPtr stream_devices;
 
     // getDisplayMedia must always request video
     if (desktop_video_requested() &&
@@ -213,7 +206,7 @@ class CefMediaAccessQuery {
     }
 
     if (error) {
-      stream_devices_set = blink::mojom::StreamDevicesSet::New();
+      stream_devices = blink::mojom::StreamDevices::New();
     } else {
       if (!device_audio_allowed && !desktop_audio_allowed) {
         request_.audio_type = blink::mojom::MediaStreamType::NO_SERVICE;
@@ -221,10 +214,10 @@ class CefMediaAccessQuery {
       if (!device_video_allowed && !desktop_video_allowed) {
         request_.video_type = blink::mojom::MediaStreamType::NO_SERVICE;
       }
-      stream_devices_set = GetRequestedMediaDevices();
+      stream_devices = GetRequestedMediaDevices();
     }
 
-    return stream_devices_set;
+    return stream_devices;
   }
 
   CefRefPtr<CefBrowserHostBase> browser_;
