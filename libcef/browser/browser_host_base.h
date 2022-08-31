@@ -180,6 +180,9 @@ class CefBrowserHostBase : public CefBrowserHost,
   void SendMouseWheelEvent(const CefMouseEvent& event,
                            int deltaX,
                            int deltaY) override;
+#if defined(OS_WIN)
+  void SendMouseWheelEventNative(const void* msg) override;
+#endif
   bool SendDevToolsMessage(const void* message, size_t message_size) override;
   int ExecuteDevToolsMethod(int message_id,
                             const CefString& method,

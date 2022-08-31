@@ -41,6 +41,7 @@ class CefBrowserPlatformDelegateOsr
   void SendMouseWheelEvent(const CefMouseEvent& event,
                            int deltaX,
                            int deltaY) override;
+  void SendMouseWheelEventNative(const void* msg) override;
   void SendTouchEvent(const CefTouchEvent& event) override;
   void SetFocus(bool setFocus) override;
   gfx::Point GetScreenPoint(const gfx::Point& view,

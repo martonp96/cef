@@ -694,6 +694,18 @@ class CefBrowserHost : public virtual CefBaseRefCounted {
                                    int deltaX,
                                    int deltaY) = 0;
 
+#if defined(OS_WIN)
+  ///
+  // Send a mouse wheel event to the browser. The |x| and |y| coordinates are
+  // relative to the upper-left corner of the view. The |deltaX| and |deltaY|
+  // values represent the movement delta in the X and Y directions respectively.
+  // In order to scroll inside select popups with window rendering disabled
+  // CefRenderHandler::GetScreenPoint should be implemented properly.
+  ///
+  /*--cef()--*/
+  virtual void SendMouseWheelEventNative(const void* msg) = 0;
+#endif
+
   ///
   // Send a touch event to the browser for a windowless browser.
   ///

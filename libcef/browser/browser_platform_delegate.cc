@@ -174,6 +174,10 @@ void CefBrowserPlatformDelegate::SendMouseWheelEvent(const CefMouseEvent& event,
   NOTIMPLEMENTED();
 }
 
+void CefBrowserPlatformDelegate::SendMouseWheelEventNative(const void* msg) {
+  NOTIMPLEMENTED();
+}
+
 void CefBrowserPlatformDelegate::SendTouchEvent(const CefTouchEvent& event) {
   NOTIMPLEMENTED();
 }
