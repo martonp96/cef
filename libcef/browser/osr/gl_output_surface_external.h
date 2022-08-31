@@ -15,12 +15,18 @@
 #include "components/viz/service/viz_service_export.h"
 #include "gpu/command_buffer/common/mailbox.h"
 #include "ui/gfx/color_space.h"
+#include "ui/gl/gl_export.h"
+#include "ui/gl/vsync_observer.h"
+
+namespace gl {
+class VSyncThreadWin;
+}
 
 namespace viz {
 
 class ExternalImageData;
 
-class VIZ_SERVICE_EXPORT GLOutputSurfaceExternal : public GLOutputSurface {
+class VIZ_SERVICE_EXPORT GLOutputSurfaceExternal : public GLOutputSurface, public gl::VSyncObserver {
  public:
   explicit GLOutputSurfaceExternal(
       scoped_refptr<VizProcessContextProvider> context_provider,
@@ -34,8 +40,12 @@ class VIZ_SERVICE_EXPORT GLOutputSurfaceExternal : public GLOutputSurface {
   void BindFramebuffer() override;
   void Reshape(const ReshapeParams& params) override;
   void SwapBuffers(OutputSurfaceFrame frame) override;
+  void SetGpuVSyncCallback(GpuVSyncCallback callback) override;
+
+  void OnVSync(base::TimeTicks timebase, base::TimeDelta interval) override;
 
  private:
+  void HandleVSyncOnMainThread(base::TimeTicks timebase, base::TimeDelta interval);
   void OnSyncWaitComplete(std::vector<ui::LatencyInfo> latency_info);
   void OnAfterSwap(std::vector<ui::LatencyInfo> latency_info);
   void BindTexture();
@@ -44,6 +54,9 @@ class VIZ_SERVICE_EXPORT GLOutputSurfaceExternal : public GLOutputSurface {
 
   ExternalImageData* CreateSurface();
 
+  const raw_ptr<gl::VSyncThreadWin> vsync_thread_;
+
+  GpuVSyncCallback gpu_vsync_callback_;
   std::unique_ptr<ExternalImageData> current_surface_;
   bool new_texture = false;
 
@@ -56,6 +69,7 @@ class VIZ_SERVICE_EXPORT GLOutputSurfaceExternal : public GLOutputSurface {
   gpu::GpuMemoryBufferManager* gpu_memory_buffer_manager_;
 
   mojo::Remote<viz::mojom::ExternalRendererUpdater> external_renderer_updater_;
+  scoped_refptr<base::SequencedTaskRunner> task_runner_;
 
   GLOutputSurfaceExternal(const GLOutputSurfaceExternal&);
   void operator=(const GLOutputSurfaceExternal&);

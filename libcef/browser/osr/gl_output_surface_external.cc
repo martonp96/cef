@@ -19,6 +19,7 @@
 #include "ui/gfx/gpu_memory_buffer.h"
 #include "ui/gfx/swap_result.h"
 #include "ui/gl/gl_utils.h"
+#include "ui/gl/vsync_thread_win.h"
 
 #if defined (OS_WIN) && !defined(ARCH_CPU_ARM_FAMILY)
 #include "ui/gl/gl_image_dxgi.h"
@@ -138,13 +139,20 @@ GLOutputSurfaceExternal::GLOutputSurfaceExternal(
     gpu::GpuMemoryBufferManager* gpu_memory_buffer_manager,
     mojo::Remote<viz::mojom::ExternalRendererUpdater> external_renderer_updater)
     : GLOutputSurface(context_provider, gpu::kNullSurfaceHandle),
+      vsync_thread_(gl::VSyncThreadWin::GetInstance()),
       gpu_memory_buffer_manager_(gpu_memory_buffer_manager),
-      external_renderer_updater_(std::move(external_renderer_updater)) {
+      external_renderer_updater_(std::move(external_renderer_updater)),
+      task_runner_(base::ThreadTaskRunnerHandle::Get()) {
        capabilities_.uses_default_gl_framebuffer = false;
+       capabilities_.supports_gpu_vsync = true;
   }
 
 GLOutputSurfaceExternal::~GLOutputSurfaceExternal() {
   DiscardBackbuffer();
+
+  if (gpu_vsync_callback_) {
+    vsync_thread_->RemoveObserver(this);
+  }
 }
 
 void GLOutputSurfaceExternal::EnsureBackbuffer() {
@@ -167,6 +175,20 @@ void GLOutputSurfaceExternal::EnsureBackbuffer() {
   if (!fbo_) {
     gl->GenFramebuffers(1, &fbo_);
   }
+}
+
+void GLOutputSurfaceExternal::OnVSync(base::TimeTicks timebase,
+                                      base::TimeDelta interval) {
+  task_runner_->PostTask(
+      FROM_HERE,
+      base::BindOnce(&GLOutputSurfaceExternal::HandleVSyncOnMainThread,
+                     weak_ptr_factory_.GetWeakPtr(), timebase, interval));
+}
+
+void GLOutputSurfaceExternal::HandleVSyncOnMainThread(base::TimeTicks timebase,
+                                                      base::TimeDelta interval) {
+  if (gpu_vsync_callback_)
+    gpu_vsync_callback_.Run(timebase, interval);
 }
 
 void GLOutputSurfaceExternal::DiscardBackbuffer() {
@@ -228,6 +250,11 @@ void GLOutputSurfaceExternal::OnSyncWaitComplete(
   if (new_texture)
     handle = current_surface_->GetHandle();
 
+  auto now = base::TimeTicks::Now();
+  client()->DidReceiveSwapBuffersAck({.swap_start = now, .swap_end = now}, gfx::GpuFenceHandle());
+  client()->DidReceivePresentationFeedback(gfx::PresentationFeedback(
+      now, /*base::Milliseconds(16)*/base::TimeDelta(), /*flags=*/0));
+
   if (current_surface_) {
     external_renderer_updater_->OnAfterFlip(
         std::move(handle), new_texture, gfx::Rect(size_),
@@ -240,15 +267,17 @@ void GLOutputSurfaceExternal::OnSyncWaitComplete(
   }
 }
 
+void GLOutputSurfaceExternal::SetGpuVSyncCallback(GpuVSyncCallback callback) {
+  if (!gpu_vsync_callback_) {
+    vsync_thread_->AddObserver(this);
+  }
+
+  gpu_vsync_callback_ = std::move(callback);
+}
+
 void GLOutputSurfaceExternal::OnAfterSwap(
     std::vector<ui::LatencyInfo> latency_info) {
   latency_tracker()->OnGpuSwapBuffersCompleted(latency_info);
-  // Swap timings are not available since for offscreen there is no Swap, just a
-  // SignalSyncToken. We use base::TimeTicks::Now() as an overestimate.
-  auto now = base::TimeTicks::Now();
-  client()->DidReceiveSwapBuffersAck({.swap_start = now}, gfx::GpuFenceHandle());
-  client()->DidReceivePresentationFeedback(gfx::PresentationFeedback(
-      now, base::Milliseconds(16), /*flags=*/0));
 
   if (needs_swap_size_notifications())
     client()->DidSwapWithSize(size_);

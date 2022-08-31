@@ -366,6 +366,7 @@ class CefRenderWidgetHostViewOSR
   viz::StubBeginFrameSource begin_frame_source_;
   uint64_t begin_frame_number_ = viz::BeginFrameArgs::kStartingFrameNumber;
   bool begin_frame_pending_ = false;
+  bool had_frame_ = false;
 
   bool sync_frame_rate_ = false;
   bool external_begin_frame_enabled_ = false;

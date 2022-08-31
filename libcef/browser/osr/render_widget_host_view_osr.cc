@@ -924,6 +924,7 @@ void CefRenderWidgetHostViewOSR::OnFrameComplete(
   DCHECK_EQ(begin_frame_source_.source_id(), ack.frame_id.source_id);
   DCHECK_EQ(begin_frame_number_, ack.frame_id.sequence_number);
   begin_frame_pending_ = false;
+  had_frame_ = true;
 }
 
 void CefRenderWidgetHostViewOSR::OnRenderFrameMetadataChangedAfterActivation(
@@ -958,6 +959,9 @@ void CefRenderWidgetHostViewOSR::OnRenderFrameMetadataChangedAfterActivation(
 
 std::unique_ptr<viz::HostDisplayClient>
 CefRenderWidgetHostViewOSR::CreateHostDisplayClient() {
+  if (had_frame_) {
+    begin_frame_pending_ = false;
+  }
   host_display_client_ =
       new CefHostDisplayClientOSR(this, gfx::kNullAcceleratedWidget, use_proxy_output_);
   host_display_client_->SetActive(true);
