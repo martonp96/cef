@@ -467,12 +467,12 @@ void CefRenderWidgetHostViewOSR::SetDisplayFeatureForTesting(
 
 blink::mojom::PointerLockResult CefRenderWidgetHostViewOSR::LockMouse(
     bool request_unadjusted_movement) {
-  return blink::mojom::PointerLockResult::kPermissionDenied;
+  return blink::mojom::PointerLockResult::kUnsupportedOptions;
 }
 
 blink::mojom::PointerLockResult CefRenderWidgetHostViewOSR::ChangeMouseLock(
     bool request_unadjusted_movement) {
-  return blink::mojom::PointerLockResult::kPermissionDenied;
+  return blink::mojom::PointerLockResult::kUnsupportedOptions;
 }
 
 void CefRenderWidgetHostViewOSR::UnlockMouse() {}

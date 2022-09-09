@@ -34,6 +34,7 @@
 #include "base/command_line.h"
 #include "chrome/browser/file_select_helper.h"
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
+#include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "content/browser/gpu/compositor_util.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/file_select_listener.h"
@@ -1289,6 +1290,49 @@ void AlloyBrowserHostImpl::ResizeDueToAutoResize(content::WebContents* source,
   UpdatePreferredSize(source, new_size);
 }
 
+void AlloyBrowserHostImpl::RequestExclusivePointerAccess(
+    content::WebContents* web_contents,
+    bool user_gesture,
+    bool last_unlocked_by_target,
+    bool allowed) {
+  if (allowed) {
+    exclusive_access_manager_->mouse_lock_controller()->RequestToLockMouse(
+        web_contents, user_gesture, last_unlocked_by_target);
+  } else {
+    web_contents->GotResponseToLockMouseRequest(
+        blink::mojom::PointerLockResult::kPermissionDenied);
+  }
+}
+
+void AlloyBrowserHostImpl::RequestToLockMouse(content::WebContents* web_contents,
+                                     bool user_gesture,
+                                     bool last_unlocked_by_target) {
+  if (IsWindowless()) {
+    web_contents->GotResponseToLockMouseRequest(
+      blink::mojom::PointerLockResult::kPermissionDenied);
+
+    return;
+  }
+  web_contents->GotResponseToLockMouseRequest(
+    blink::mojom::PointerLockResult::kSuccess);
+}
+
+void AlloyBrowserHostImpl::LostMouseLock() {
+  exclusive_access_manager_->mouse_lock_controller()->LostMouseLock();
+}
+
+void AlloyBrowserHostImpl::RequestKeyboardLock(content::WebContents* web_contents,
+                                      bool esc_key_locked) {
+  exclusive_access_manager_->keyboard_lock_controller()->RequestKeyboardLock(
+      web_contents, esc_key_locked);
+}
+
+void AlloyBrowserHostImpl::CancelKeyboardLockRequest(
+    content::WebContents* web_contents) {
+  exclusive_access_manager_->keyboard_lock_controller()
+      ->CancelKeyboardLockRequest(web_contents);
+}
+
 void AlloyBrowserHostImpl::RequestMediaAccessPermission(
     content::WebContents* web_contents,
     const content::MediaStreamRequest& request,
@@ -1406,6 +1450,40 @@ void AlloyBrowserHostImpl::WebContentsDestroyed() {
     platform_delegate_->WebContentsDestroyed(wc);
 }
 
+Profile* AlloyBrowserHostImpl::GetProfile() {
+  return nullptr;
+}
+
+bool AlloyBrowserHostImpl::IsFullscreen() const {
+  return is_fullscreen_;
+}
+
+void AlloyBrowserHostImpl::EnterFullscreen(const GURL& url,
+                                  ExclusiveAccessBubbleType bubble_type,
+                                  const int64_t display_id) {}
+
+void AlloyBrowserHostImpl::ExitFullscreen() {}
+
+void AlloyBrowserHostImpl::UpdateExclusiveAccessExitBubbleContent(
+    const GURL& url,
+    ExclusiveAccessBubbleType bubble_type,
+    ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+    bool force_update) {}
+
+void AlloyBrowserHostImpl::OnExclusiveAccessUserInput() {}
+
+content::WebContents* AlloyBrowserHostImpl::GetActiveWebContents() {
+  return web_contents();
+}
+
+bool AlloyBrowserHostImpl::CanUserExitFullscreen() const {
+  return true;
+}
+
+bool AlloyBrowserHostImpl::IsExclusiveAccessBubbleDisplayed() const {
+  return false;
+}
+
 void AlloyBrowserHostImpl::StartAudioCapturer() {
   if (!client_.get() || audio_capturer_)
     return;
@@ -1445,7 +1523,8 @@ AlloyBrowserHostImpl::AlloyBrowserHostImpl(
       content::WebContentsObserver(web_contents),
       opener_(kNullWindowHandle),
       is_windowless_(platform_delegate_->IsWindowless()),
-      extension_(extension) {
+      extension_(extension),
+      exclusive_access_manager_(std::make_unique<ExclusiveAccessManager>(this)) {
   contents_delegate_->ObserveWebContents(web_contents);
 
   if (opener.get() && !is_views_hosted_) {

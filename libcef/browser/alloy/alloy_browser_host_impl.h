@@ -22,6 +22,7 @@
 #include "libcef/browser/request_context_impl.h"
 
 #include "base/synchronization/lock.h"
+#include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -30,6 +31,7 @@
 class CefAudioCapturer;
 class CefBrowserInfo;
 class SiteInstance;
+class ExclusiveAccessManager;
 
 // CefBrowser implementation for the alloy runtime. Method calls are delegated
 // to the CefPlatformDelegate or the WebContents as appropriate. All methods are
@@ -48,7 +50,8 @@ class SiteInstance;
 // WebContentsObserver::routing_id() when sending IPC messages.
 class AlloyBrowserHostImpl : public CefBrowserHostBase,
                              public content::WebContentsDelegate,
-                             public content::WebContentsObserver {
+                             public content::WebContentsObserver,
+                             public ExclusiveAccessContext {
  public:
   // Used for handling the response to command messages.
   class CommandResponseHandler : public virtual CefBaseRefCounted {
@@ -263,6 +266,17 @@ class AlloyBrowserHostImpl : public CefBrowserHostBase,
                            const gfx::Size& pref_size) override;
   void ResizeDueToAutoResize(content::WebContents* source,
                              const gfx::Size& new_size) override;
+  void RequestExclusivePointerAccess(content::WebContents* web_contents,
+                                     bool user_gesture,
+                                     bool last_unlocked_by_target,
+                                     bool allowed);
+  void RequestToLockMouse(content::WebContents* web_contents,
+                          bool user_gesture,
+                          bool last_unlocked_by_target) override;
+  void LostMouseLock() override;
+  void RequestKeyboardLock(content::WebContents* web_contents,
+                           bool esc_key_locked) override;
+  void CancelKeyboardLockRequest(content::WebContents* web_contents) override;
   void RequestMediaAccessPermission(
       content::WebContents* web_contents,
       const content::MediaStreamRequest& request,
@@ -288,6 +302,23 @@ class AlloyBrowserHostImpl : public CefBrowserHostBase,
       const std::vector<content::AXLocationChangeNotificationDetails>& locData)
       override;
   void WebContentsDestroyed() override;
+
+  // ExclusiveAccessContext methods.
+  Profile* GetProfile() override;
+  bool IsFullscreen() const override;
+  void EnterFullscreen(const GURL& url,
+                       ExclusiveAccessBubbleType bubble_type,
+                       const int64_t display_id) override;
+  void ExitFullscreen() override;
+  void UpdateExclusiveAccessExitBubbleContent(
+      const GURL& url,
+      ExclusiveAccessBubbleType bubble_type,
+      ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+      bool force_update) override;
+  void OnExclusiveAccessUserInput() override;
+  content::WebContents* GetActiveWebContents() override;
+  bool CanUserExitFullscreen() const override;
+  bool IsExclusiveAccessBubbleDisplayed() const override;
 
  private:
   friend class CefBrowserPlatformDelegateAlloy;
@@ -347,6 +378,8 @@ class AlloyBrowserHostImpl : public CefBrowserHostBase,
   // starts running when a tab stops being audible, and is canceled if it starts
   // being audible again before it fires.
   std::unique_ptr<base::OneShotTimer> recently_audible_timer_;
+
+  std::unique_ptr<ExclusiveAccessManager> exclusive_access_manager_;
 };
 
 #endif  // CEF_LIBCEF_BROWSER_ALLOY_ALLOY_BROWSER_HOST_IMPL_H_
