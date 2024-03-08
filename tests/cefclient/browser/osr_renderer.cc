@@ -2,7 +2,13 @@
 // reserved. Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file.
 
-#include "tests/cefclient/browser/osr_renderer.h"
+#include "tests/cefclient/browser/osr_renderer.h" 
+
+#if !defined(OS_WIN)
+// Begin disable NSOpenGL deprecation warnings.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 #if USE_SHADERS
 // Expose prototypes for OpenGL shader functions.
@@ -14,7 +20,6 @@
 #if defined(OS_WIN)
 #include <gl/gl.h>
 #elif defined(OS_MAC)
-#define GL_SILENCE_DEPRECATION
 #if USE_SHADERS
 #include <OpenGL/gl3.h>
 #else
@@ -51,7 +56,7 @@
 #endif
 
 namespace client {
-
+ 
 #if USE_SHADERS
 namespace {
 
@@ -94,7 +99,7 @@ const char* kUpdateRectFragmentShader =
     "void main() {\n"
     "\tfColor = vColor;\n"
     "}";
-
+ 
 // clang-format off
 constexpr float kLineVertices[] = {
     // pos        // color
@@ -254,7 +259,7 @@ OsrRenderer::OsrRenderer(const OsrRendererSettings& settings)
 
 OsrRenderer::~OsrRenderer() {
   Cleanup();
-}
+} 
 
 void OsrRenderer::Initialize() {
   if (initialized_) {
@@ -427,7 +432,7 @@ void OsrRenderer::Initialize() {
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   VERIFY_NO_ERROR;
 #endif
-
+ 
   initialized_ = true;
 }
 
@@ -449,6 +454,8 @@ void OsrRenderer::Cleanup() {
 }
 
 void OsrRenderer::Render() {
+  auto source_tex_id = texture_id_;
+
   if (view_width_ == 0 || view_height_ == 0) {
     return;
   }
@@ -489,7 +496,7 @@ void OsrRenderer::Render() {
   }
   glActiveTexture(GL_TEXTURE0);
   VERIFY_NO_ERROR;
-  glBindTexture(GL_TEXTURE_2D, texture_id_);
+  glBindTexture(GL_TEXTURE_2D, source_tex_id);
   VERIFY_NO_ERROR;
 
   glUseProgram(screen_shader_program_id_);
@@ -639,9 +646,9 @@ void OsrRenderer::Render() {
   VERIFY_NO_ERROR;
 
   // Draw the facets with the texture.
-  DCHECK_NE(texture_id_, 0U);
+  DCHECK_NE(source_tex_id, 0U);
   VERIFY_NO_ERROR;
-  glBindTexture(GL_TEXTURE_2D, texture_id_);
+  glBindTexture(GL_TEXTURE_2D, source_tex_id);
   VERIFY_NO_ERROR;
   glInterleavedArrays(GL_T2F_V3F, 0, vertices);
   VERIFY_NO_ERROR;
@@ -650,7 +657,7 @@ void OsrRenderer::Render() {
 
   // Disable 2D textures.
   glDisable(GL_TEXTURE_2D);
-  VERIFY_NO_ERROR;
+  VERIFY_NO_ERROR; 
 
   if (IsTransparent()) {
     // Disable alpha blending.
@@ -753,6 +760,212 @@ CefRect OsrRenderer::GetPopupRectInWebView(const CefRect& original_rect) {
 void OsrRenderer::ClearPopupRects() {
   popup_rect_.Set(0, 0, 0, 0);
   original_popup_rect_.Set(0, 0, 0, 0);
+}
+
+void OsrRenderer::OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,
+                          CefRenderHandler::PaintElementType type,
+                          const CefRenderHandler::RectList& dirtyRects,
+                          unsigned int io_surface_tex,
+                          int width,
+                          int height) {
+  if (!initialized_) {
+    Initialize();
+  }
+
+#if !defined(OS_WIN)
+  auto rectTexture = io_surface_tex;
+ 
+  if (width != view_width_ || height != view_height_) {
+      // Width or height has changed, so proceed to update the texture
+      view_width_ = width;
+      view_height_ = height; 
+
+      // Rebind texture_id as the active texture
+      glBindTexture(GL_TEXTURE_2D, texture_id_);
+      VERIFY_NO_ERROR;
+
+      // Allocate a new storage for texture_id with the new dimensions
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+      VERIFY_NO_ERROR;
+  }
+    
+  if (IsTransparent()) {
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    VERIFY_NO_ERROR;
+      
+    // Enable alpha blending.
+    glEnable(GL_BLEND);
+    VERIFY_NO_ERROR;
+  } 
+
+  GLuint framebuffer;
+  glGenFramebuffers(1, &framebuffer);
+  VERIFY_NO_ERROR;
+  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+  VERIFY_NO_ERROR;
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_id_, 0);
+  VERIFY_NO_ERROR; 
+
+  // Check framebuffer status
+  DCHECK(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+  glPushAttrib(GL_ALL_ATTRIB_BITS);
+  VERIFY_NO_ERROR; 
+  glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+  VERIFY_NO_ERROR; 
+
+  // Setup OpenGL states
+  glViewport(0, 0, width, height);
+  VERIFY_NO_ERROR; 
+
+  // Bind the GL_TEXTURE_RECTANGLE_ARB texture
+  glActiveTexture(GL_TEXTURE0);
+  VERIFY_NO_ERROR;
+
+  glClientActiveTexture(GL_TEXTURE0);
+  VERIFY_NO_ERROR;
+
+  glMatrixMode(GL_TEXTURE);
+  VERIFY_NO_ERROR; 
+  glPushMatrix();
+  VERIFY_NO_ERROR; 
+  glLoadIdentity();
+  VERIFY_NO_ERROR; 
+
+  glMatrixMode(GL_PROJECTION);
+  VERIFY_NO_ERROR; 
+  glPushMatrix();
+  VERIFY_NO_ERROR; 
+  glLoadIdentity();
+  VERIFY_NO_ERROR; 
+  glOrtho(0, width, 0, height, -1, 1);
+  VERIFY_NO_ERROR; 
+
+  glMatrixMode(GL_MODELVIEW);
+  VERIFY_NO_ERROR; 
+  glPushMatrix();
+  VERIFY_NO_ERROR; 
+  glLoadIdentity();
+  VERIFY_NO_ERROR;  
+
+  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, rectTexture); // rectangleTexture is the GL_TEXTURE_RECTANGLE_ARB 
+  VERIFY_NO_ERROR;
+
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+  VERIFY_NO_ERROR; 
+  glColor4f(1.0, 1.0, 1.0, 1.0);
+  VERIFY_NO_ERROR; 
+
+  bool isFlipped = false;
+     
+  GLfloat tex_coords[8];
+
+  GLfloat texOriginX = 0;
+  GLfloat texOriginY = 0;
+  GLfloat texExtentX = width;
+  GLfloat texExtentY = height;
+
+  // X
+  tex_coords[0] = texOriginX;
+  tex_coords[2] = texOriginX;
+  tex_coords[4] = texExtentX;
+  tex_coords[6] = texExtentX;
+
+  // Y
+  if(!isFlipped)
+  {
+      tex_coords[1] = texOriginY;
+      tex_coords[3] = texExtentY;
+      tex_coords[5] = texExtentY;
+      tex_coords[7] = texOriginY;
+  }
+  else
+  {
+      tex_coords[1] = texExtentY;
+      tex_coords[3] = texOriginY;
+      tex_coords[5] = texOriginY;
+      tex_coords[7] = texExtentY;
+  }
+
+  GLfloat verts[] =
+  {
+      0.0f, 0.0f,
+      0.0f, (float) height,
+      (float) width, (float) height,
+      (float) width, 0.0f,
+  };
+
+  // Ought to cache the GL_ARRAY_BUFFER_BINDING, GL_ELEMENT_ARRAY_BUFFER_BINDING, set buffer to 0, and reset
+  GLint arrayBuffer, elementArrayBuffer;
+  glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &elementArrayBuffer);
+  VERIFY_NO_ERROR; 
+  glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &arrayBuffer);
+  VERIFY_NO_ERROR; 
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  VERIFY_NO_ERROR; 
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  VERIFY_NO_ERROR; 
+
+  glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+  VERIFY_NO_ERROR; 
+  glTexCoordPointer(2, GL_FLOAT, 0, tex_coords );
+  VERIFY_NO_ERROR; 
+  glEnableClientState(GL_VERTEX_ARRAY);
+  VERIFY_NO_ERROR; 
+  glVertexPointer(2, GL_FLOAT, 0, verts );
+  VERIFY_NO_ERROR; 
+  glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+  VERIFY_NO_ERROR; 
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementArrayBuffer);
+  VERIFY_NO_ERROR; 
+  glBindBuffer(GL_ARRAY_BUFFER, arrayBuffer);
+  VERIFY_NO_ERROR; 
+
+  glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+  VERIFY_NO_ERROR; 
+
+  // Restore OpenGL states
+  glMatrixMode(GL_MODELVIEW);
+  VERIFY_NO_ERROR; 
+  glPopMatrix();
+  VERIFY_NO_ERROR; 
+
+  glMatrixMode(GL_PROJECTION);
+  VERIFY_NO_ERROR; 
+  glPopMatrix();
+  VERIFY_NO_ERROR; 
+ 
+  glMatrixMode(GL_TEXTURE);
+  VERIFY_NO_ERROR; 
+  glPopMatrix();
+  VERIFY_NO_ERROR; 
+
+  glPopClientAttrib();
+  VERIFY_NO_ERROR; 
+  glPopAttrib(); 
+  VERIFY_NO_ERROR;
+
+  if (IsTransparent()) {
+    // Enable alpha blending.
+    glDisable(GL_BLEND);
+    VERIFY_NO_ERROR; 
+  }  
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0); // 0 unbinds the FBO, reverting to the default buffer
+  VERIFY_NO_ERROR;
+
+  glDeleteFramebuffers(1, &framebuffer);
+  VERIFY_NO_ERROR;
+
+  // Delete the rectangle texture
+  glDeleteTextures(1, &rectTexture);
+  VERIFY_NO_ERROR;
+
+  glDisable(GL_TEXTURE_RECTANGLE_ARB);
+  VERIFY_NO_ERROR;
+#endif
 }
 
 void OsrRenderer::OnPaint(CefRefPtr<CefBrowser> browser,
@@ -882,3 +1095,8 @@ void OsrRenderer::IncrementSpin(float spinDX, float spinDY) {
 }
 
 }  // namespace client
+
+#if !defined(OS_WIN)
+// End disable NSOpenGL deprecation warnings.
+#pragma clang diagnostic pop
+#endif

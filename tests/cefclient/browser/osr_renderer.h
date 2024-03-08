@@ -49,6 +49,14 @@ class OsrRenderer {
                int width,
                int height);
 
+  // Used when rendering with shared textures.
+  void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,
+                          CefRenderHandler::PaintElementType type,
+                          const CefRenderHandler::RectList& dirtyRects,
+                          unsigned int io_surface_tex,
+                          int width,
+                          int height);
+
   // Apply spin.
   void SetSpin(float spinX, float spinY);
   void IncrementSpin(float spinDX, float spinDY);
@@ -61,12 +69,14 @@ class OsrRenderer {
 
   void ClearPopupRects();
 
+  const OsrRendererSettings& settings() const { return settings_; }
+
  private:
   CefRect GetPopupRectInWebView(const CefRect& original_rect);
 
   inline bool IsTransparent() const {
     return CefColorGetA(settings_.background_color) == 0;
-  }
+  } 
 
   const OsrRendererSettings settings_;
   bool initialized_ = false;
