@@ -103,7 +103,7 @@ void CefVideoConsumerOSR::OnFrameCaptured(
   // If it is GPU Texture OSR.
   if (use_shared_texture_) {
     DCHECK(data->is_gpu_memory_buffer_handle() &&
-           info->pixel_format == media::PIXEL_FORMAT_ARGB);
+           info->pixel_format == media::PIXEL_FORMAT_ABGR);
 #if BUILDFLAG(IS_WIN)
     auto& gmb_handle = data->get_gpu_memory_buffer_handle();
     view_->OnAcceleratedPaint(content_rect, info->coded_size,
