@@ -73,6 +73,10 @@ int RunMain(HINSTANCE hInstance, int nCmdShow) {
 
   CefSettings settings;
 
+  // Not setting this will crash when using GPU OSR.
+  CefString(&settings.root_cache_path) = "./Cache";
+  CefString(&settings.cache_path) = "./Cache";
+
 #if !defined(CEF_USE_SANDBOX)
   settings.no_sandbox = true;
 #endif
