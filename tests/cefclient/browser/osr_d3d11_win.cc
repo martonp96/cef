@@ -834,8 +834,6 @@ void Layer::render_texture(const std::shared_ptr<Context>& ctx,
       effect_ = device_->create_default_effect();
     }
 
-    texture->lock_key(0, INFINITE);
-
     // Bind our states/resource to the pipeline.
     ScopedBinder<Geometry> quad_binder(ctx, geometry_);
     ScopedBinder<Effect> fx_binder(ctx, effect_);
@@ -843,8 +841,6 @@ void Layer::render_texture(const std::shared_ptr<Context>& ctx,
 
     // Draw the quad.
     geometry_->draw();
-
-    texture->unlock_key(0);
   }
 }
 

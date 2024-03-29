@@ -76,7 +76,7 @@ class OsrRenderer {
 
   inline bool IsTransparent() const {
     return CefColorGetA(settings_.background_color) == 0;
-  } 
+  }
 
   const OsrRendererSettings settings_;
   bool initialized_ = false;
