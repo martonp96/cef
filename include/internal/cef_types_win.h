@@ -43,6 +43,7 @@
 #define cef_cursor_handle_t HCURSOR
 #define cef_event_handle_t MSG*
 #define cef_window_handle_t HWND
+#define cef_shared_texture_handle_t HANDLE
 
 #define kNullCursorHandle NULL
 #define kNullEventHandle NULL
@@ -103,6 +104,18 @@ typedef struct _cef_window_info_t {
   ///
   cef_window_handle_t window;
 } cef_window_info_t;
+
+///
+/// Structure containing the shared texture information of accelerated paint
+/// event.
+///
+typedef struct _cef_accelerated_paint_info_t {
+  ///
+  /// Handle to get the shared texture, the shared texture is instantiated
+  /// without a keyed mutex. It is actually an HANDLE.
+  ///
+  cef_shared_texture_handle_t shared_texture_handle;
+} cef_accelerated_paint_info_t;
 
 #ifdef __cplusplus
 }

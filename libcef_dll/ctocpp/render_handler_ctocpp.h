@@ -56,7 +56,7 @@ class CefRenderHandlerCToCpp
   void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,
                           PaintElementType type,
                           const RectList& dirtyRects,
-                          void* shared_handle) override;
+                          const AcceleratedPaintInfo& info) override;
   void GetTouchHandleSize(CefRefPtr<CefBrowser> browser,
                           cef_horizontal_alignment_t orientation,
                           CefSize& size) override;

@@ -149,17 +149,23 @@ typedef struct _cef_render_handler_t {
   /// Called when an element has been rendered to the shared texture handle.
   /// |type| indicates whether the element is the view or the popup widget.
   /// |dirtyRects| contains the set of rectangles in pixel coordinates that need
-  /// to be repainted. |shared_handle| is the handle for a D3D11 Texture2D that
-  /// can be accessed via ID3D11Device using the OpenSharedResource function.
-  /// This function is only called when cef_window_tInfo::shared_texture_enabled
-  /// is set to true (1), and is currently only supported on Windows.
+  /// to be repainted.
+  /// Since 6367 (M124), there's a breaking change of this callback. |info| now
+  /// contains the shared handle, on Windows it is a HANDLE to a texture that
+  /// can be opened with D3D11 OpenSharedResource, on macOS it is a IOSurface*
+  /// that can be opened with Metal or OpenGL, and on Linux it contains several
+  /// planes, each has a fd to the underlying buffer (dmabuf mostly).
+  /// NOTE: The resource may differ every frame, so be careful when
+  /// caching the shared resource, it is suggested to re-open the handle's
+  /// resource every time it is called.
   ///
-  void(CEF_CALLBACK* on_accelerated_paint)(struct _cef_render_handler_t* self,
-                                           struct _cef_browser_t* browser,
-                                           cef_paint_element_type_t type,
-                                           size_t dirtyRectsCount,
-                                           cef_rect_t const* dirtyRects,
-                                           void* shared_handle);
+  void(CEF_CALLBACK* on_accelerated_paint)(
+      struct _cef_render_handler_t* self,
+      struct _cef_browser_t* browser,
+      cef_paint_element_type_t type,
+      size_t dirtyRectsCount,
+      cef_rect_t const* dirtyRects,
+      cef_accelerated_paint_info_t const* info);
 
   ///
   /// Called to retrieve the size of the touch handle for the specified

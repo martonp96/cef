@@ -31,6 +31,8 @@
 #define CEF_INCLUDE_INTERNAL_CEF_TYPES_LINUX_H_
 #pragma once
 
+#include <vector>
+
 #include "include/base/cef_build.h"
 #include "include/cef_config.h"
 
@@ -136,6 +138,40 @@ typedef struct _cef_window_info_t {
   ///
   cef_window_handle_t window;
 } cef_window_info_t;
+
+///
+/// Structure containing the plane information of the shared texture.
+/// Sync with native_pixmap_handle.h
+///
+typedef struct _cef_accelerated_paint_info_t {
+  /// 
+  /// The strides and offsets in bytes to be used when accessing the buffers via
+  /// a memory mapping. One per plane per entry. Size in bytes of the plane is 
+  /// necessary to map the buffers.
+  ///
+  uint32_t stride;
+  uint64_t offset;
+  uint64_t size;
+ 
+  ///
+  /// File descriptor for the underlying memory object (usually dmabuf).
+  ///
+  int fd;
+} cef_accelerated_paint_native_pixmap_plane_t;
+
+///
+/// Structure containing the shared texture information of accelerated paint
+/// event. 
+///
+typedef struct _cef_accelerated_paint_info_t {
+  ///
+  /// Planes of the shared texture, usually file descriptors of dmabufs.
+  ///
+  std::vector<cef_accelerated_paint_native_pixmap_plane_t> planes;
+ 
+  /// Modifier could be used with EGL driver.
+  uint64_t modifier = 0x00ffffffffffffffULL;
+} cef_accelerated_paint_info_t;
 
 #ifdef __cplusplus
 }
