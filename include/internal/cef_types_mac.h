@@ -44,6 +44,8 @@
 #define cef_event_handle_t void*
 // Actually NSView*
 #define cef_window_handle_t void*
+// Actually IOSurface*
+#define cef_shared_texture_handle_t void*
 
 #define kNullCursorHandle NULL
 #define kNullEventHandle NULL
@@ -135,6 +137,18 @@ typedef struct _cef_window_info_t {
   ///
   cef_window_handle_t view;
 } cef_window_info_t;
+
+///
+/// Structure containing the shared texture information of accelerated paint
+/// event.
+///
+typedef struct _cef_accelerated_paint_info_t {
+  ///
+  /// Handle to get the shared texture IOSurface. 
+  /// It is actually an IOSurface pointer.
+  ///
+  cef_shared_texture_handle_t shared_texture_io_surface;
+} cef_accelerated_paint_info_t;
 
 #ifdef __cplusplus
 }

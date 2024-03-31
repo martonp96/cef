@@ -256,7 +256,7 @@ class CefRenderWidgetHostViewOSR
                const void* pixels);
   void OnAcceleratedPaint(const gfx::Rect& damage_rect,
                           const gfx::Size& pixel_size,
-                          const void* shared_handle);
+                          const CefRenderHandler::AcceleratedPaintInfo& info);
 
   void OnBeginFame(base::TimeTicks frame_time);
 

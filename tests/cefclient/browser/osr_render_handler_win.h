@@ -45,10 +45,11 @@ class OsrRenderHandlerWin {
                        int height) = 0;
 
   // Used when rendering with shared textures.
-  virtual void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,
-                                  CefRenderHandler::PaintElementType type,
-                                  const CefRenderHandler::RectList& dirtyRects,
-                                  void* share_handle) = 0;
+  virtual void OnAcceleratedPaint(
+      CefRefPtr<CefBrowser> browser,
+      CefRenderHandler::PaintElementType type,
+      const CefRenderHandler::RectList& dirtyRects,
+      const CefRenderHandler::AcceleratedPaintInfo& info) = 0;
 
   bool send_begin_frame() const {
     return settings_.external_begin_frame_enabled;

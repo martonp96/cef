@@ -106,14 +106,28 @@ void CefVideoConsumerOSR::OnFrameCaptured(
            info->pixel_format == media::PIXEL_FORMAT_ABGR);
 #if BUILDFLAG(IS_WIN)
     auto& gmb_handle = data->get_gpu_memory_buffer_handle();
-    view_->OnAcceleratedPaint(content_rect, info->coded_size,
-                              gmb_handle.dxgi_handle.Get());
+    cef_accelerated_paint_info_t paint_info;
+    paint_info.shared_texture_handle = gmb_handle.dxgi_handle.Get();
+    view_->OnAcceleratedPaint(content_rect, info->coded_size, paint_info);
 #elif BUILDFLAG(IS_APPLE)
-    // Not sure if this will compile at all :(
-    // Seeking chances to a macOS computer...
     auto& gmb_handle = data->get_gpu_memory_buffer_handle();
-    view_->OnAcceleratedPaint(content_rect, info->coded_size,
-                              gmb_handle.io_surface.get());
+    cef_accelerated_paint_info_t paint_info;
+    paint_info.shared_texture_io_surface = gmb_handle.io_surface.get();
+    view_->OnAcceleratedPaint(content_rect, info->coded_size, paint_info);
+#elif BUILDFLAG(IS_LINUX)
+    auto& gmb_handle = data->get_gpu_memory_buffer_handle();
+    auto& native_pixmap = gmb_handle.native_pixmap_handle;
+    cef_accelerated_paint_info_t paint_info;
+    paint_info.modifier = native_pixmap.modifier;
+    for (const auto& plane : native_pixmap.planes) {
+      cef_accelerated_paint_native_pixmap_plane_t cef_plane;
+      cef_plane.stride = plane.stride;
+      cef_plane.offset = plane.offset;
+      cef_plane.size = plane.size;
+      cef_plane.fd = plane.fd;
+      paint_info.planes.push_back(cef_plane);
+    }
+    view_->OnAcceleratedPaint(content_rect, info->coded_size, paint_info);
 #endif
     return;
   }

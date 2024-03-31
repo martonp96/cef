@@ -32,10 +32,11 @@ class OsrRenderHandlerWinGL : public OsrRenderHandlerWin {
                const void* buffer,
                int width,
                int height) override;
-  void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,
-                          CefRenderHandler::PaintElementType type,
-                          const CefRenderHandler::RectList& dirtyRects,
-                          void* share_handle) override;
+  void OnAcceleratedPaint(
+      CefRefPtr<CefBrowser> browser,
+      CefRenderHandler::PaintElementType type,
+      const CefRenderHandler::RectList& dirtyRects,
+      const CefRenderHandler::AcceleratedPaintInfo& info) override;
 
  private:
   void Render() override;

@@ -1599,17 +1599,13 @@ void CefRenderWidgetHostViewOSR::OnPaint(const gfx::Rect& damage_rect,
 void CefRenderWidgetHostViewOSR::OnAcceleratedPaint(
     const gfx::Rect& damage_rect,
     const gfx::Size& pixel_size,
-    const void* shared_handle) {
+    const CefRenderHandler::AcceleratedPaintInfo& info) {
   TRACE_EVENT0("cef", "CefRenderWidgetHostViewOSR::OnAcceleratedPaint");
 
   // Workaround for https://github.com/chromiumembedded/cef/issues/2817
   if (!is_showing_) {
     return;
-  }
-
-  if (!shared_handle) {
-    return;
-  }
+  } 
 
   CefRefPtr<CefRenderHandler> handler =
       browser_impl_->client()->GetRenderHandler();
@@ -1624,7 +1620,7 @@ void CefRenderWidgetHostViewOSR::OnAcceleratedPaint(
 
   handler->OnAcceleratedPaint(browser_impl_.get(),
                               IsPopupWidget() ? PET_POPUP : PET_VIEW, rcList,
-                              const_cast<void*>(shared_handle));
+                              info);
 
   // Release the resize hold when we reach the desired size.
   if (hold_resize_) {
